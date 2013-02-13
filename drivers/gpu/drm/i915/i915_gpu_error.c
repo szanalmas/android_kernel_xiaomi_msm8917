@@ -791,7 +791,12 @@ static void i915_gem_record_fences(struct drm_device *dev,
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	int i;
 
-	if (IS_GEN3(dev) || IS_GEN2(dev)) {
+	/* Fences */
+	switch (INTEL_INFO(dev)->gen) {
+	case 9:
+	case 8:
+	case 7:
+	case 6:
 		for (i = 0; i < dev_priv->num_fence_regs; i++)
 			error->fence[i] = I915_READ(FENCE_REG(i));
 	} else if (IS_GEN5(dev) || IS_GEN4(dev)) {
