@@ -1174,7 +1174,7 @@ static int init_render_ring(struct intel_engine_cs *ring)
 	 *
 	 * WaDisableAsyncFlipPerfMode:snb,ivb,hsw,vlv
 	 */
-	if (INTEL_INFO(dev)->gen >= 6 && INTEL_INFO(dev)->gen < 8)
+	if (INTEL_INFO(dev)->gen >= 6 && INTEL_INFO(dev)->gen < 9)
 		I915_WRITE(MI_MODE, _MASKED_BIT_ENABLE(ASYNC_FLIP_PERF_DISABLE));
 
 	/* Required for the hardware to program scanline values for waiting */
