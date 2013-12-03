@@ -1071,7 +1071,7 @@ intel_dp_aux_init(struct intel_dp *intel_dp, struct intel_connector *connector)
 	 *
 	 * Skylake moves AUX_CTL back next to DDI_BUF_CTL, on the CPU.
 	 */
-	if (!IS_HASWELL(dev) && !IS_BROADWELL(dev) && port != PORT_E)
+	if (!IS_HASWELL(dev) && !IS_BROADWELL(dev))
 		intel_dp->aux_ch_ctl_reg = intel_dp->output_reg + 0x10;
 
 	intel_dp->aux.name = name;
