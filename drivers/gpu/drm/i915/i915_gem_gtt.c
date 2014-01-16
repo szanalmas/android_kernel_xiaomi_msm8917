@@ -3249,6 +3249,32 @@ __i915_gem_vma_create(struct drm_i915_gem_object *obj,
 	vma->vm = vm;
 	vma->obj = obj;
 
+	switch (INTEL_INFO(vm->dev)->gen) {
+	case 9:
+	case 8:
+	case 7:
+	case 6:
+		if (i915_is_ggtt(vm)) {
+			vma->unbind_vma = ggtt_unbind_vma;
+			vma->bind_vma = ggtt_bind_vma;
+		} else {
+			vma->unbind_vma = ppgtt_unbind_vma;
+			vma->bind_vma = ppgtt_bind_vma;
+		}
+		break;
+	case 5:
+	case 4:
+	case 3:
+	case 2:
+		BUG_ON(!i915_is_ggtt(vm));
+		vma->unbind_vma = i915_ggtt_unbind_vma;
+		vma->bind_vma = i915_ggtt_bind_vma;
+		break;
+	default:
+		BUG();
+	}
+
+	/* Keep GGTT vmas first to make debug easier */
 	if (i915_is_ggtt(vm))
 		vma->ggtt_view = *ggtt_view;
 
