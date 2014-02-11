@@ -7494,6 +7494,13 @@ int cik_irq_set(struct radeon_device *rdev)
 
 	cp_m1p0 = RREG32(CP_ME1_PIPE0_INT_CNTL) & ~TIME_STAMP_INT_ENABLE;
 
+	if (rdev->flags & RADEON_IS_IGP)
+		thermal_int = RREG32_SMC(CG_THERMAL_INT_CTRL) &
+			~(THERM_INTH_MASK | THERM_INTL_MASK);
+	else
+		thermal_int = RREG32_SMC(CG_THERMAL_INT) &
+			~(THERM_INT_MASK_HIGH | THERM_INT_MASK_LOW);
+
 	/* enable CP interrupts on all rings */
 	if (atomic_read(&rdev->irq.ring_int[RADEON_RING_TYPE_GFX_INDEX])) {
 		DRM_DEBUG("cik_irq_set: sw int gfx\n");
