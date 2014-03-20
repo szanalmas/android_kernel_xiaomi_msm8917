@@ -2628,7 +2628,7 @@ static irqreturn_t gen8_irq_handler(int irq, void *arg)
 			    intel_pipe_handle_vblank(dev, pipe))
 				intel_check_page_flip(dev, pipe);
 
-			if (INTEL_INFO(dev_priv)->gen >= 9)
+			if (IS_GEN9(dev))
 				flip_done = pipe_iir & GEN9_PIPE_PLANE1_FLIP_DONE;
 			else
 				flip_done = pipe_iir & GEN8_PIPE_PRIMARY_FLIP_DONE;
@@ -2646,7 +2646,8 @@ static irqreturn_t gen8_irq_handler(int irq, void *arg)
 								    pipe);
 
 
-			if (INTEL_INFO(dev_priv)->gen >= 9)
+
+			if (IS_GEN9(dev))
 				fault_errors = pipe_iir & GEN9_DE_PIPE_IRQ_FAULT_ERRORS;
 			else
 				fault_errors = pipe_iir & GEN8_DE_PIPE_IRQ_FAULT_ERRORS;
@@ -3942,30 +3943,18 @@ static void gen8_de_irq_postinstall(struct drm_i915_private *dev_priv)
 {
 	uint32_t de_pipe_masked = GEN8_PIPE_CDCLK_CRC_DONE;
 	uint32_t de_pipe_enables;
-	u32 de_port_masked = GEN8_AUX_CHANNEL_A;
-	u32 de_port_enables;
-	enum pipe pipe;
+	int pipe;
 
-	if (INTEL_INFO(dev_priv)->gen >= 9) {
+	if (IS_GEN9(dev_priv))
 		de_pipe_masked |= GEN9_PIPE_PLANE1_FLIP_DONE |
 				  GEN9_DE_PIPE_IRQ_FAULT_ERRORS;
-		de_port_masked |= GEN9_AUX_CHANNEL_B | GEN9_AUX_CHANNEL_C |
-				  GEN9_AUX_CHANNEL_D;
-		if (IS_BROXTON(dev_priv))
-			de_port_masked |= BXT_DE_PORT_GMBUS;
-	} else {
+	else
 		de_pipe_masked |= GEN8_PIPE_PRIMARY_FLIP_DONE |
 				  GEN8_DE_PIPE_IRQ_FAULT_ERRORS;
-	}
 
 	de_pipe_enables = de_pipe_masked | GEN8_PIPE_VBLANK |
 					   GEN8_PIPE_FIFO_UNDERRUN;
 
-	de_port_enables = de_port_masked;
-	if (IS_BROXTON(dev_priv))
-		de_port_enables |= BXT_DE_PORT_HOTPLUG_MASK;
-	else if (IS_BROADWELL(dev_priv))
-		de_port_enables |= GEN8_PORT_DP_A_HOTPLUG;
 
 	dev_priv->de_irq_mask[PIPE_A] = ~de_pipe_masked;
 	dev_priv->de_irq_mask[PIPE_B] = ~de_pipe_masked;
