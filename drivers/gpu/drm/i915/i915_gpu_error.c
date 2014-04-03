@@ -940,13 +940,9 @@ static void i915_record_ring_state(struct drm_device *dev,
 
 		ering->vm_info.gfx_mode = I915_READ(RING_MODE_GEN7(ring));
 
-		if (IS_GEN6(dev))
-			ering->vm_info.pp_dir_base =
-				I915_READ(RING_PP_DIR_BASE_READ(ring));
-		else if (IS_GEN7(dev))
-			ering->vm_info.pp_dir_base =
-				I915_READ(RING_PP_DIR_BASE(ring));
-		else if (INTEL_INFO(dev)->gen >= 8)
+		switch (INTEL_INFO(dev)->gen) {
+		case 9:
+		case 8:
 			for (i = 0; i < 4; i++) {
 				ering->vm_info.pdp[i] =
 					I915_READ(GEN8_RING_PDP_UDW(ring, i));
