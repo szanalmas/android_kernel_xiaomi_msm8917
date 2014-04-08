@@ -15182,15 +15182,13 @@ static void intel_init_display(struct drm_device *dev)
 				broadwell_modeset_calc_cdclk;
 		}
 	} else if (IS_VALLEYVIEW(dev)) {
-		dev_priv->display.modeset_commit_cdclk =
-			valleyview_modeset_commit_cdclk;
-		dev_priv->display.modeset_calc_cdclk =
-			valleyview_modeset_calc_cdclk;
-	} else if (IS_BROXTON(dev)) {
-		dev_priv->display.modeset_commit_cdclk =
-			broxton_modeset_commit_cdclk;
-		dev_priv->display.modeset_calc_cdclk =
-			broxton_modeset_calc_cdclk;
+		dev_priv->display.modeset_global_resources =
+			valleyview_modeset_global_resources;
+		dev_priv->display.write_eld = ironlake_write_eld;
+	} else if (INTEL_INFO(dev)->gen >= 9) {
+		dev_priv->display.write_eld = haswell_write_eld;
+		dev_priv->display.modeset_global_resources =
+			haswell_modeset_global_resources;
 	}
 
 	switch (INTEL_INFO(dev)->gen) {
