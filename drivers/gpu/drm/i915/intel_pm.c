@@ -6733,7 +6733,12 @@ static void ibx_init_clock_gating(struct drm_device *dev)
 	 * gating for the panel power sequencer or it will fail to
 	 * start up when no ports are active.
 	 */
-	I915_WRITE(SOUTH_DSPCLK_GATE_D, PCH_DPLSUNIT_CLOCK_GATE_DISABLE);
+	vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
+	outb(inb(VGA_MSR_READ), VGA_MSR_WRITE);
+	vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
+
+	if (IS_BROADWELL(dev) || (INTEL_INFO(dev)->gen >= 9))
+		gen8_irq_power_well_post_enable(dev_priv);
 }
 
 static void g4x_disable_trickle_feed(struct drm_device *dev)
