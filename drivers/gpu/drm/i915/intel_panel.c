@@ -1719,22 +1719,12 @@ intel_panel_init_backlight_funcs(struct intel_panel *panel)
 	struct drm_device *dev = intel_connector->base.dev;
 	struct drm_i915_private *dev_priv = dev->dev_private;
 
-	if (IS_BROXTON(dev)) {
-		panel->backlight.setup = bxt_setup_backlight;
-		panel->backlight.enable = bxt_enable_backlight;
-		panel->backlight.disable = bxt_disable_backlight;
-		panel->backlight.set = bxt_set_backlight;
-		panel->backlight.get = bxt_get_backlight;
-	} else if (HAS_PCH_LPT(dev) || HAS_PCH_SPT(dev)) {
-		panel->backlight.setup = lpt_setup_backlight;
-		panel->backlight.enable = lpt_enable_backlight;
-		panel->backlight.disable = lpt_disable_backlight;
-		panel->backlight.set = lpt_set_backlight;
-		panel->backlight.get = lpt_get_backlight;
-		if (HAS_PCH_LPT(dev))
-			panel->backlight.hz_to_pwm = lpt_hz_to_pwm;
-		else
-			panel->backlight.hz_to_pwm = spt_hz_to_pwm;
+	if (IS_BROADWELL(dev) || (INTEL_INFO(dev)->gen >= 9)) {
+		dev_priv->display.setup_backlight = bdw_setup_backlight;
+		dev_priv->display.enable_backlight = bdw_enable_backlight;
+		dev_priv->display.disable_backlight = pch_disable_backlight;
+		dev_priv->display.set_backlight = bdw_set_backlight;
+		dev_priv->display.get_backlight = bdw_get_backlight;
 	} else if (HAS_PCH_SPLIT(dev)) {
 		panel->backlight.setup = pch_setup_backlight;
 		panel->backlight.enable = pch_enable_backlight;
