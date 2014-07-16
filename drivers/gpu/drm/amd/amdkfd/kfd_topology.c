@@ -27,7 +27,7 @@
 #include <linux/acpi.h>
 #include <linux/hash.h>
 #include <linux/cpufreq.h>
-#include <linux/log2.h>
+
 
 #include "kfd_priv.h"
 #include "kfd_crat.h"
@@ -97,7 +97,11 @@ static int kfd_topology_get_crat_acpi(void *crat_image, size_t *size)
 		return -EINVAL;
 	}
 
+<<<<<<< HEAD
 	if (*size >= crat_table->length && crat_image != NULL)
+=======
+	if (*size >= crat_table->length && crat_image != 0)
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 		memcpy(crat_image, crat_table, crat_table->length);
 
 	*size = crat_table->length;
@@ -184,7 +188,11 @@ static int kfd_parse_subtype_mem(struct crat_subtype_memory *mem)
 	list_for_each_entry(dev, &topology_device_list, list) {
 		if (mem->promixity_domain == i) {
 			props = kfd_alloc_struct(props);
+<<<<<<< HEAD
 			if (props == NULL)
+=======
+			if (props == 0)
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 				return -ENOMEM;
 
 			if (dev->node_props.cpu_cores_count == 0)
@@ -232,7 +240,11 @@ static int kfd_parse_subtype_cache(struct crat_subtype_cache *cache)
 		if (id == dev->node_props.cpu_core_id_base ||
 		    id == dev->node_props.simd_id_base) {
 			props = kfd_alloc_struct(props);
+<<<<<<< HEAD
 			if (props == NULL)
+=======
+			if (props == 0)
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 				return -ENOMEM;
 
 			props->processor_id_low = id;
@@ -283,7 +295,11 @@ static int kfd_parse_subtype_iolink(struct crat_subtype_iolink *iolink)
 	list_for_each_entry(dev, &topology_device_list, list) {
 		if (id_from == i) {
 			props = kfd_alloc_struct(props);
+<<<<<<< HEAD
 			if (props == NULL)
+=======
+			if (props == 0)
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 				return -ENOMEM;
 
 			props->node_from = id_from;
@@ -416,9 +432,15 @@ static struct kfd_topology_device *kfd_create_topology_device(void)
 	struct kfd_topology_device *dev;
 
 	dev = kfd_alloc_struct(dev);
+<<<<<<< HEAD
 	if (dev == NULL) {
 		pr_err("No memory to allocate a topology device");
 		return NULL;
+=======
+	if (dev == 0) {
+		pr_err("No memory to allocate a topology device");
+		return 0;
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 	}
 
 	INIT_LIST_HEAD(&dev->mem_props);
@@ -429,7 +451,11 @@ static struct kfd_topology_device *kfd_create_topology_device(void)
 	sys_props.num_devices++;
 
 	return dev;
+<<<<<<< HEAD
 }
+=======
+	}
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 
 static int kfd_parse_crat_table(void *crat_image)
 {
@@ -631,10 +657,17 @@ static struct kobj_type cache_type = {
 static ssize_t node_show(struct kobject *kobj, struct attribute *attr,
 		char *buffer)
 {
+<<<<<<< HEAD
 	struct kfd_topology_device *dev;
 	char public_name[KFD_TOPOLOGY_PUBLIC_NAME_SIZE];
 	uint32_t i;
 	uint32_t log_max_watch_addr;
+=======
+	ssize_t ret;
+	struct kfd_topology_device *dev;
+	char public_name[KFD_TOPOLOGY_PUBLIC_NAME_SIZE];
+	uint32_t i;
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 
 	/* Making sure that the buffer is an empty string */
 	buffer[0] = 0;
@@ -642,10 +675,15 @@ static ssize_t node_show(struct kobject *kobj, struct attribute *attr,
 	if (strcmp(attr->name, "gpu_id") == 0) {
 		dev = container_of(attr, struct kfd_topology_device,
 				attr_gpuid);
+<<<<<<< HEAD
 		return sysfs_show_32bit_val(buffer, dev->gpu_id);
 	}
 
 	if (strcmp(attr->name, "name") == 0) {
+=======
+		ret = sysfs_show_32bit_val(buffer, dev->gpu_id);
+	} else if (strcmp(attr->name, "name") == 0) {
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 		dev = container_of(attr, struct kfd_topology_device,
 				attr_name);
 		for (i = 0; i < KFD_TOPOLOGY_PUBLIC_NAME_SIZE; i++) {
@@ -655,6 +693,7 @@ static ssize_t node_show(struct kobject *kobj, struct attribute *attr,
 				break;
 		}
 		public_name[KFD_TOPOLOGY_PUBLIC_NAME_SIZE-1] = 0x0;
+<<<<<<< HEAD
 		return sysfs_show_str_val(buffer, public_name);
 	}
 
@@ -740,6 +779,78 @@ static ssize_t node_show(struct kobject *kobj, struct attribute *attr,
 
 	return sysfs_show_32bit_prop(buffer, "max_engine_clk_ccompute",
 					cpufreq_quick_get_max(0)/1000);
+=======
+		ret = sysfs_show_str_val(buffer, public_name);
+	} else {
+		dev = container_of(attr, struct kfd_topology_device,
+				attr_props);
+		sysfs_show_32bit_prop(buffer, "cpu_cores_count",
+				dev->node_props.cpu_cores_count);
+		sysfs_show_32bit_prop(buffer, "simd_count",
+				dev->node_props.simd_count);
+
+		if (dev->mem_bank_count < dev->node_props.mem_banks_count) {
+			pr_warn("kfd: mem_banks_count truncated from %d to %d\n",
+					dev->node_props.mem_banks_count,
+					dev->mem_bank_count);
+			sysfs_show_32bit_prop(buffer, "mem_banks_count",
+					dev->mem_bank_count);
+		} else {
+			sysfs_show_32bit_prop(buffer, "mem_banks_count",
+					dev->node_props.mem_banks_count);
+		}
+
+		sysfs_show_32bit_prop(buffer, "caches_count",
+				dev->node_props.caches_count);
+		sysfs_show_32bit_prop(buffer, "io_links_count",
+				dev->node_props.io_links_count);
+		sysfs_show_32bit_prop(buffer, "cpu_core_id_base",
+				dev->node_props.cpu_core_id_base);
+		sysfs_show_32bit_prop(buffer, "simd_id_base",
+				dev->node_props.simd_id_base);
+		sysfs_show_32bit_prop(buffer, "capability",
+				dev->node_props.capability);
+		sysfs_show_32bit_prop(buffer, "max_waves_per_simd",
+				dev->node_props.max_waves_per_simd);
+		sysfs_show_32bit_prop(buffer, "lds_size_in_kb",
+				dev->node_props.lds_size_in_kb);
+		sysfs_show_32bit_prop(buffer, "gds_size_in_kb",
+				dev->node_props.gds_size_in_kb);
+		sysfs_show_32bit_prop(buffer, "wave_front_size",
+				dev->node_props.wave_front_size);
+		sysfs_show_32bit_prop(buffer, "array_count",
+				dev->node_props.array_count);
+		sysfs_show_32bit_prop(buffer, "simd_arrays_per_engine",
+				dev->node_props.simd_arrays_per_engine);
+		sysfs_show_32bit_prop(buffer, "cu_per_simd_array",
+				dev->node_props.cu_per_simd_array);
+		sysfs_show_32bit_prop(buffer, "simd_per_cu",
+				dev->node_props.simd_per_cu);
+		sysfs_show_32bit_prop(buffer, "max_slots_scratch_cu",
+				dev->node_props.max_slots_scratch_cu);
+		sysfs_show_32bit_prop(buffer, "engine_id",
+				dev->node_props.engine_id);
+		sysfs_show_32bit_prop(buffer, "vendor_id",
+				dev->node_props.vendor_id);
+		sysfs_show_32bit_prop(buffer, "device_id",
+				dev->node_props.device_id);
+		sysfs_show_32bit_prop(buffer, "location_id",
+				dev->node_props.location_id);
+
+		if (dev->gpu) {
+			sysfs_show_32bit_prop(buffer, "max_engine_clk_fcompute",
+					kfd2kgd->get_max_engine_clock_in_mhz(
+						dev->gpu->kgd));
+			sysfs_show_64bit_prop(buffer, "local_mem_size",
+					kfd2kgd->get_vmem_size(dev->gpu->kgd));
+		}
+
+		ret = sysfs_show_32bit_prop(buffer, "max_engine_clk_ccompute",
+				cpufreq_quick_get_max(0)/1000);
+	}
+
+	return ret;
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 }
 
 static const struct sysfs_ops node_ops = {
@@ -770,11 +881,19 @@ static void kfd_remove_sysfs_node_entry(struct kfd_topology_device *dev)
 			if (iolink->kobj) {
 				kfd_remove_sysfs_file(iolink->kobj,
 							&iolink->attr);
+<<<<<<< HEAD
 				iolink->kobj = NULL;
 			}
 		kobject_del(dev->kobj_iolink);
 		kobject_put(dev->kobj_iolink);
 		dev->kobj_iolink = NULL;
+=======
+				iolink->kobj = 0;
+			}
+		kobject_del(dev->kobj_iolink);
+		kobject_put(dev->kobj_iolink);
+		dev->kobj_iolink = 0;
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 	}
 
 	if (dev->kobj_cache) {
@@ -782,22 +901,38 @@ static void kfd_remove_sysfs_node_entry(struct kfd_topology_device *dev)
 			if (cache->kobj) {
 				kfd_remove_sysfs_file(cache->kobj,
 							&cache->attr);
+<<<<<<< HEAD
 				cache->kobj = NULL;
 			}
 		kobject_del(dev->kobj_cache);
 		kobject_put(dev->kobj_cache);
 		dev->kobj_cache = NULL;
+=======
+				cache->kobj = 0;
+			}
+		kobject_del(dev->kobj_cache);
+		kobject_put(dev->kobj_cache);
+		dev->kobj_cache = 0;
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 	}
 
 	if (dev->kobj_mem) {
 		list_for_each_entry(mem, &dev->mem_props, list)
 			if (mem->kobj) {
 				kfd_remove_sysfs_file(mem->kobj, &mem->attr);
+<<<<<<< HEAD
 				mem->kobj = NULL;
 			}
 		kobject_del(dev->kobj_mem);
 		kobject_put(dev->kobj_mem);
 		dev->kobj_mem = NULL;
+=======
+				mem->kobj = 0;
+			}
+		kobject_del(dev->kobj_mem);
+		kobject_put(dev->kobj_mem);
+		dev->kobj_mem = 0;
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 	}
 
 	if (dev->kobj_node) {
@@ -806,7 +941,11 @@ static void kfd_remove_sysfs_node_entry(struct kfd_topology_device *dev)
 		sysfs_remove_file(dev->kobj_node, &dev->attr_props);
 		kobject_del(dev->kobj_node);
 		kobject_put(dev->kobj_node);
+<<<<<<< HEAD
 		dev->kobj_node = NULL;
+=======
+		dev->kobj_node = 0;
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 	}
 }
 
@@ -935,7 +1074,11 @@ static int kfd_build_sysfs_node_tree(void)
 	uint32_t i = 0;
 
 	list_for_each_entry(dev, &topology_device_list, list) {
+<<<<<<< HEAD
 		ret = kfd_build_sysfs_node_entry(dev, i);
+=======
+		ret = kfd_build_sysfs_node_entry(dev, 0);
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 		if (ret < 0)
 			return ret;
 		i++;
@@ -957,7 +1100,11 @@ static int kfd_topology_update_sysfs(void)
 	int ret;
 
 	pr_info("Creating topology SYSFS entries\n");
+<<<<<<< HEAD
 	if (sys_props.kobj_topology == NULL) {
+=======
+	if (sys_props.kobj_topology == 0) {
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 		sys_props.kobj_topology =
 				kfd_alloc_struct(sys_props.kobj_topology);
 		if (!sys_props.kobj_topology)
@@ -1007,17 +1154,29 @@ static void kfd_topology_release_sysfs(void)
 		if (sys_props.kobj_nodes) {
 			kobject_del(sys_props.kobj_nodes);
 			kobject_put(sys_props.kobj_nodes);
+<<<<<<< HEAD
 			sys_props.kobj_nodes = NULL;
 		}
 		kobject_del(sys_props.kobj_topology);
 		kobject_put(sys_props.kobj_topology);
 		sys_props.kobj_topology = NULL;
+=======
+			sys_props.kobj_nodes = 0;
+		}
+		kobject_del(sys_props.kobj_topology);
+		kobject_put(sys_props.kobj_topology);
+		sys_props.kobj_topology = 0;
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 	}
 }
 
 int kfd_topology_init(void)
 {
+<<<<<<< HEAD
 	void *crat_image = NULL;
+=======
+	void *crat_image = 0;
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 	size_t image_size = 0;
 	int ret;
 
@@ -1100,9 +1259,14 @@ static uint32_t kfd_generate_gpu_id(struct kfd_dev *gpu)
 	buf[2] = gpu->pdev->subsystem_device;
 	buf[3] = gpu->pdev->device;
 	buf[4] = gpu->pdev->bus->number;
+<<<<<<< HEAD
 	buf[5] = (uint32_t)(gpu->kfd2kgd->get_vmem_size(gpu->kgd)
 			& 0xffffffff);
 	buf[6] = (uint32_t)(gpu->kfd2kgd->get_vmem_size(gpu->kgd) >> 32);
+=======
+	buf[5] = (uint32_t)(kfd2kgd->get_vmem_size(gpu->kgd) & 0xffffffff);
+	buf[6] = (uint32_t)(kfd2kgd->get_vmem_size(gpu->kgd) >> 32);
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 
 	for (i = 0, hashout = 0; i < 7; i++)
 		hashout ^= hash_32(buf[i], KFD_GPU_ID_HASH_WIDTH);
@@ -1113,12 +1277,20 @@ static uint32_t kfd_generate_gpu_id(struct kfd_dev *gpu)
 static struct kfd_topology_device *kfd_assign_gpu(struct kfd_dev *gpu)
 {
 	struct kfd_topology_device *dev;
+<<<<<<< HEAD
 	struct kfd_topology_device *out_dev = NULL;
+=======
+	struct kfd_topology_device *out_dev = 0;
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 
 	BUG_ON(!gpu);
 
 	list_for_each_entry(dev, &topology_device_list, list)
+<<<<<<< HEAD
 		if (dev->gpu == NULL && dev->node_props.simd_count > 0) {
+=======
+		if (dev->gpu == 0 && dev->node_props.simd_count > 0) {
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 			dev->gpu = gpu;
 			out_dev = dev;
 			break;
@@ -1186,11 +1358,14 @@ int kfd_topology_add_device(struct kfd_dev *gpu)
 	 * TODO: Retrieve max engine clock values from KGD
 	 */
 
+<<<<<<< HEAD
 	if (dev->gpu->device_info->asic_family == CHIP_CARRIZO) {
 		dev->node_props.capability |= HSA_CAP_DOORBELL_PACKET_TYPE;
 		pr_info("amdkfd: adding doorbell packet type capability\n");
 	}
 
+=======
+>>>>>>> 5b5c4e40a37e... amdkfd: Add topology module to amdkfd
 	res = 0;
 
 err:
