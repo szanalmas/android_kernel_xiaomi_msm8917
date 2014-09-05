@@ -35,7 +35,7 @@
 #include <drm/drm_fb_helper.h>
 #include <drm/drm_dp_mst_helper.h>
 #include <drm/drm_rect.h>
-#include <drm/drm_atomic.h>
+
 
 /**
  * _wait_for - magic (register) wait macro
@@ -244,47 +244,19 @@ typedef struct dpll {
 	int	p;
 } intel_clock_t;
 
-struct intel_atomic_state {
-	struct drm_atomic_state base;
-
-	unsigned int cdclk;
-	bool dpll_set;
-	struct intel_shared_dpll_config shared_dpll[I915_NUM_PLLS];
-};
-
 struct intel_plane_state {
-	struct drm_plane_state base;
+	struct drm_crtc *crtc;
+	struct drm_framebuffer *fb;
 	struct drm_rect src;
 	struct drm_rect dst;
 	struct drm_rect clip;
+	struct drm_rect orig_src;
+	struct drm_rect orig_dst;
 	bool visible;
-
-	/*
-	 * scaler_id
-	 *    = -1 : not using a scaler
-	 *    >=  0 : using a scalers
-	 *
-	 * plane requiring a scaler:
-	 *   - During check_plane, its bit is set in
-	 *     crtc_state->scaler_state.scaler_users by calling helper function
-	 *     update_scaler_plane.
-	 *   - scaler_id indicates the scaler it got assigned.
-	 *
-	 * plane doesn't require a scaler:
-	 *   - this can happen when scaling is no more required or plane simply
-	 *     got disabled.
-	 *   - During check_plane, corresponding bit is reset in
-	 *     crtc_state->scaler_state.scaler_users by calling helper function
-	 *     update_scaler_plane.
-	 */
-	int scaler_id;
-
-	struct drm_intel_sprite_colorkey ckey;
 };
 
-struct intel_initial_plane_config {
-	struct intel_framebuffer *fb;
-	unsigned int tiling;
+struct intel_plane_config {
+	bool tiled;
 	int size;
 	u32 base;
 };
