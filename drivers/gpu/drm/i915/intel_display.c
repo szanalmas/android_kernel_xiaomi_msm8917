@@ -13503,25 +13503,45 @@ intel_prepare_plane_fb(struct drm_plane *plane,
 	return ret;
 }
 
-/**
- * intel_cleanup_plane_fb - Cleans up an fb after plane use
- * @plane: drm plane to clean up for
- * @fb: old framebuffer that was on plane
- *
- * Cleans up a framebuffer that has just been removed from a plane.
- */
-void
-intel_cleanup_plane_fb(struct drm_plane *plane,
-		       const struct drm_plane_state *old_state)
+static int
+intel_check_primary_plane(struct drm_plane *plane,
+			  struct intel_plane_state *state)
 {
-	struct drm_device *dev = plane->dev;
-	struct drm_i915_gem_object *obj = intel_fb_obj(old_state->fb);
+	struct drm_crtc *crtc = state->crtc;
+	struct drm_framebuffer *fb = state->fb;
+	struct drm_rect *dest = &state->dst;
+	struct drm_rect *src = &state->src;
+	const struct drm_rect *clip = &state->clip;
 
-	if (!obj)
-		return;
+	return drm_plane_helper_check_update(plane, crtc, fb,
+					    src, dest, clip,
+					    DRM_PLANE_HELPER_NO_SCALING,
+					    DRM_PLANE_HELPER_NO_SCALING,
+					    false, true, &state->visible);
+}
 
-	if (plane->type != DRM_PLANE_TYPE_CURSOR ||
-	    !INTEL_INFO(dev)->cursor_needs_physical) {
+static int
+intel_commit_primary_plane(struct drm_plane *plane,
+			   struct intel_plane_state *state)
+{
+	struct drm_crtc *crtc = state->crtc;
+	struct drm_framebuffer *fb = state->fb;
+	struct drm_device *dev = crtc->dev;
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+	struct drm_i915_gem_object *obj = intel_fb_obj(fb);
+	struct drm_i915_gem_object *old_obj = intel_fb_obj(plane->fb);
+	struct intel_plane *intel_plane = to_intel_plane(plane);
+	struct drm_rect *src = &state->src;
+	int ret;
+
+	/*
+	 * If the CRTC isn't enabled, we're just pinning the framebuffer,
+	 * updating the fb pointer, and returning without touching the
+	 * hardware.  This allows us to later do a drmModeSetCrtc with fb=-1 to
+	 * turn on the display with all planes setup as desired.
+	 */
+	if (!crtc->enabled) {
 		mutex_lock(&dev->struct_mutex);
 		intel_unpin_fb_obj(old_state->fb, old_state);
 		mutex_unlock(&dev->struct_mutex);
@@ -13553,7 +13573,8 @@ skl_max_scale(struct intel_crtc *intel_crtc, struct intel_crtc_state *crtc_state
 	 *            or
 	 *    cdclk/crtc_clock
 	 */
-	max_scale = min((1 << 16) * 3 - 1, (1 << 8) * ((cdclk << 8) / crtc_clock));
+	if (!state->visible) {
+		mutex_lock(&dev->struct_mutex);
 
 	return max_scale;
 }
@@ -13606,10 +13627,28 @@ intel_commit_primary_plane(struct drm_plane *plane,
 	if (!crtc->state->active)
 		return;
 
-	dev_priv->display.update_primary_plane(crtc, fb,
-					       state->src.x1 >> 16,
-					       state->src.y1 >> 16);
-}
+	} else {
+		if (intel_crtc && intel_crtc->active &&
+		    intel_crtc->primary_enabled) {
+			/*
+			 * FBC does not work on some platforms for rotated
+			 * planes, so disable it when rotation is not 0 and
+			 * update it when rotation is set back to 0.
+			 *
+			 * FIXME: This is redundant with the fbc update done in
+			 * the primary plane enable function except that that
+			 * one is done too late. We eventually need to unify
+			 * this.
+			 */
+			if (INTEL_INFO(dev)->gen <= 4 && !IS_G4X(dev) &&
+			    dev_priv->fbc.plane == intel_crtc->plane &&
+			    intel_plane->rotation != BIT(DRM_ROTATE_0)) {
+				intel_disable_fbc(dev);
+			}
+		}
+		ret = intel_pipe_set_base(crtc, src->x1, src->y1, fb);
+		if (ret)
+			return ret;
 
 static void
 intel_disable_primary_plane(struct drm_plane *plane,
@@ -13618,8 +13657,15 @@ intel_disable_primary_plane(struct drm_plane *plane,
 	struct drm_device *dev = plane->dev;
 	struct drm_i915_private *dev_priv = dev->dev_private;
 
-	dev_priv->display.update_primary_plane(crtc, NULL, 0, 0);
-}
+	intel_plane->crtc_x = state->orig_dst.x1;
+	intel_plane->crtc_y = state->orig_dst.y1;
+	intel_plane->crtc_w = drm_rect_width(&state->orig_dst);
+	intel_plane->crtc_h = drm_rect_height(&state->orig_dst);
+	intel_plane->src_x = state->orig_src.x1;
+	intel_plane->src_y = state->orig_src.y1;
+	intel_plane->src_w = drm_rect_width(&state->orig_src);
+	intel_plane->src_h = drm_rect_height(&state->orig_src);
+	intel_plane->obj = obj;
 
 static void intel_begin_crtc_commit(struct drm_crtc *crtc,
 				    struct drm_crtc_state *old_crtc_state)
@@ -13655,14 +13701,51 @@ static void intel_finish_crtc_commit(struct drm_crtc *crtc,
 		intel_pipe_update_end(intel_crtc);
 }
 
-/**
- * intel_plane_destroy - destroy a plane
- * @plane: plane to destroy
- *
- * Common destruction function for all types of planes (primary, cursor,
- * sprite).
- */
-void intel_plane_destroy(struct drm_plane *plane)
+static int
+intel_primary_plane_setplane(struct drm_plane *plane, struct drm_crtc *crtc,
+			     struct drm_framebuffer *fb, int crtc_x, int crtc_y,
+			     unsigned int crtc_w, unsigned int crtc_h,
+			     uint32_t src_x, uint32_t src_y,
+			     uint32_t src_w, uint32_t src_h)
+{
+	struct intel_plane_state state;
+	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+	int ret;
+
+	state.crtc = crtc;
+	state.fb = fb;
+
+	/* sample coordinates in 16.16 fixed point */
+	state.src.x1 = src_x;
+	state.src.x2 = src_x + src_w;
+	state.src.y1 = src_y;
+	state.src.y2 = src_y + src_h;
+
+	/* integer pixels */
+	state.dst.x1 = crtc_x;
+	state.dst.x2 = crtc_x + crtc_w;
+	state.dst.y1 = crtc_y;
+	state.dst.y2 = crtc_y + crtc_h;
+
+	state.clip.x1 = 0;
+	state.clip.y1 = 0;
+	state.clip.x2 = intel_crtc->active ? intel_crtc->config.pipe_src_w : 0;
+	state.clip.y2 = intel_crtc->active ? intel_crtc->config.pipe_src_h : 0;
+
+	state.orig_src = state.src;
+	state.orig_dst = state.dst;
+
+	ret = intel_check_primary_plane(plane, &state);
+	if (ret)
+		return ret;
+
+	intel_commit_primary_plane(plane, &state);
+
+	return 0;
+}
+
+/* Common destruction function for both primary and cursor planes */
+static void intel_plane_destroy(struct drm_plane *plane)
 {
 	struct intel_plane *intel_plane = to_intel_plane(plane);
 	drm_plane_cleanup(plane);
