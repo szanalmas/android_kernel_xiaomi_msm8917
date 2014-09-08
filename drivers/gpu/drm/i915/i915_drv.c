@@ -774,7 +774,8 @@ static int i915_drm_resume(struct drm_device *dev)
 
 	intel_guc_resume(dev);
 
-	intel_modeset_init_hw(dev);
+		/* We need working interrupts for modeset enabling ... */
+		intel_runtime_pm_restore_interrupts(dev);
 
 	spin_lock_irq(&dev_priv->irq_lock);
 	if (dev_priv->display.hpd_irq_setup)
