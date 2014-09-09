@@ -13535,37 +13535,7 @@ intel_commit_primary_plane(struct drm_plane *plane,
 	struct drm_rect *src = &state->src;
 	int ret;
 
-	/*
-	 * If the CRTC isn't enabled, we're just pinning the framebuffer,
-	 * updating the fb pointer, and returning without touching the
-	 * hardware.  This allows us to later do a drmModeSetCrtc with fb=-1 to
-	 * turn on the display with all planes setup as desired.
-	 */
-	if (!crtc->enabled) {
-		mutex_lock(&dev->struct_mutex);
-		intel_unpin_fb_obj(old_state->fb, old_state);
-		mutex_unlock(&dev->struct_mutex);
-	}
-}
-
-int
-skl_max_scale(struct intel_crtc *intel_crtc, struct intel_crtc_state *crtc_state)
-{
-	int max_scale;
-	struct drm_device *dev;
-	struct drm_i915_private *dev_priv;
-	int crtc_clock, cdclk;
-
-	if (!intel_crtc || !crtc_state)
-		return DRM_PLANE_HELPER_NO_SCALING;
-
-	dev = intel_crtc->base.dev;
-	dev_priv = dev->dev_private;
-	crtc_clock = crtc_state->base.adjusted_mode.crtc_clock;
-	cdclk = to_intel_atomic_state(crtc_state->base.state)->cdclk;
-
-	if (!crtc_clock || !cdclk)
-		return DRM_PLANE_HELPER_NO_SCALING;
+	intel_crtc_wait_for_pending_flips(crtc);
 
 	/*
 	 * skl max scale is lower of:
