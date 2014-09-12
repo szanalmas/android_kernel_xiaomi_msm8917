@@ -2758,7 +2758,43 @@ void i915_global_gtt_cleanup(struct drm_device *dev)
 	vm->cleanup(vm);
 }
 
-static unsigned int gen6_get_total_gtt_size(u16 snb_gmch_ctl)
+static int setup_scratch_page(struct drm_device *dev)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	struct page *page;
+	dma_addr_t dma_addr;
+
+	page = alloc_page(GFP_KERNEL | GFP_DMA32 | __GFP_ZERO);
+	if (page == NULL)
+		return -ENOMEM;
+	set_pages_uc(page, 1);
+
+#ifdef CONFIG_INTEL_IOMMU
+	dma_addr = pci_map_page(dev->pdev, page, 0, PAGE_SIZE,
+				PCI_DMA_BIDIRECTIONAL);
+	if (pci_dma_mapping_error(dev->pdev, dma_addr))
+		return -EINVAL;
+#else
+	dma_addr = page_to_phys(page);
+#endif
+	dev_priv->gtt.base.scratch.page = page;
+	dev_priv->gtt.base.scratch.addr = dma_addr;
+
+	return 0;
+}
+
+static void teardown_scratch_page(struct drm_device *dev)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	struct page *page = dev_priv->gtt.base.scratch.page;
+
+	set_pages_wb(page, 1);
+	pci_unmap_page(dev->pdev, dev_priv->gtt.base.scratch.addr,
+		       PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
+	__free_page(page);
+}
+
+static inline unsigned int gen6_get_total_gtt_size(u16 snb_gmch_ctl)
 {
 	snb_gmch_ctl >>= SNB_GMCH_GGMS_SHIFT;
 	snb_gmch_ctl &= SNB_GMCH_GGMS_MASK;
