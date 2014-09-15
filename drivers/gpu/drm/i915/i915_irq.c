@@ -396,10 +396,9 @@ u32 gen6_sanitize_rps_pm_mask(struct drm_i915_private *dev_priv, u32 mask)
 void gen6_disable_rps_interrupts(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
+	struct intel_crtc *crtc;
 
 	spin_lock_irq(&dev_priv->irq_lock);
-	dev_priv->rps.interrupts_enabled = false;
-	spin_unlock_irq(&dev_priv->irq_lock);
 
 	cancel_work_sync(&dev_priv->rps.work);
 
@@ -413,7 +412,7 @@ void gen6_disable_rps_interrupts(struct drm_device *dev)
 
 	spin_unlock_irq(&dev_priv->irq_lock);
 
-	synchronize_irq(dev->irq);
+	spin_unlock_irq(&dev_priv->irq_lock);
 }
 
 /**
@@ -601,6 +600,31 @@ static void i915_enable_asle_pipestat(struct drm_device *dev)
 				     PIPE_LEGACY_BLC_EVENT_STATUS);
 
 	spin_unlock_irq(&dev_priv->irq_lock);
+}
+
+/**
+ * i915_pipe_enabled - check if a pipe is enabled
+ * @dev: DRM device
+ * @pipe: pipe to check
+ *
+ * Reading certain registers when the pipe is disabled can hang the chip.
+ * Use this routine to make sure the PLL is running and the pipe is active
+ * before reading such registers if unsure.
+ */
+static int
+i915_pipe_enabled(struct drm_device *dev, int pipe)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+
+	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
+		/* Locking is horribly broken here, but whatever. */
+		struct drm_crtc *crtc = dev_priv->pipe_to_crtc_mapping[pipe];
+		struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+
+		return intel_crtc->active;
+	} else {
+		return I915_READ(PIPECONF(pipe)) & PIPECONF_ENABLE;
+	}
 }
 
 /*
@@ -3347,21 +3371,11 @@ static void gen8_irq_reset(struct drm_device *dev)
 void gen8_irq_power_well_post_enable(struct drm_i915_private *dev_priv,
 				     unsigned int pipe_mask)
 {
-	uint32_t extra_ier = GEN8_PIPE_VBLANK | GEN8_PIPE_FIFO_UNDERRUN;
-
 	spin_lock_irq(&dev_priv->irq_lock);
-	if (pipe_mask & 1 << PIPE_A)
-		GEN8_IRQ_INIT_NDX(DE_PIPE, PIPE_A,
-				  dev_priv->de_irq_mask[PIPE_A],
-				  ~dev_priv->de_irq_mask[PIPE_A] | extra_ier);
-	if (pipe_mask & 1 << PIPE_B)
-		GEN8_IRQ_INIT_NDX(DE_PIPE, PIPE_B,
-				  dev_priv->de_irq_mask[PIPE_B],
-				  ~dev_priv->de_irq_mask[PIPE_B] | extra_ier);
-	if (pipe_mask & 1 << PIPE_C)
-		GEN8_IRQ_INIT_NDX(DE_PIPE, PIPE_C,
-				  dev_priv->de_irq_mask[PIPE_C],
-				  ~dev_priv->de_irq_mask[PIPE_C] | extra_ier);
+	GEN8_IRQ_INIT_NDX(DE_PIPE, PIPE_B, dev_priv->de_irq_mask[PIPE_B],
+			  ~dev_priv->de_irq_mask[PIPE_B]);
+	GEN8_IRQ_INIT_NDX(DE_PIPE, PIPE_C, dev_priv->de_irq_mask[PIPE_C],
+			  ~dev_priv->de_irq_mask[PIPE_C]);
 	spin_unlock_irq(&dev_priv->irq_lock);
 }
 
