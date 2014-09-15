@@ -1090,7 +1090,20 @@ enum transcoder intel_pipe_to_cpu_transcoder(struct drm_i915_private *dev_priv,
 	struct drm_crtc *crtc = dev_priv->pipe_to_crtc_mapping[pipe];
 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
 
-	return intel_crtc->config->cpu_transcoder;
+	return intel_crtc->config.cpu_transcoder;
+}
+
+/**
+ * intel_wait_for_vblank - wait for vblank on a given pipe
+ * @dev: drm device
+ * @pipe: pipe to wait for
+ *
+ * Wait for vblank to occur on a given pipe.  Needed for various bits of
+ * mode setting code.
+ */
+void intel_wait_for_vblank(struct drm_device *dev, int pipe)
+{
+	drm_wait_one_vblank(dev, pipe);
 }
 
 static bool pipe_dsl_stopped(struct drm_device *dev, enum pipe pipe)
