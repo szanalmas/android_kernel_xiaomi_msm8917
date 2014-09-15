@@ -2991,55 +2991,16 @@ static void skl_detach_scaler(struct intel_crtc *intel_crtc, int id)
  */
 static void skl_detach_scalers(struct intel_crtc *intel_crtc)
 {
-	struct intel_crtc_scaler_state *scaler_state;
-	int i;
+	struct drm_device *dev = crtc->dev;
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+	bool pending;
 
 	scaler_state = &intel_crtc->config->scaler_state;
 
-	/* loop through and disable scalers that aren't in use */
-	for (i = 0; i < intel_crtc->num_scalers; i++) {
-		if (!scaler_state->scalers[i].in_use)
-			skl_detach_scaler(intel_crtc, i);
-	}
-}
-
-u32 skl_plane_ctl_format(uint32_t pixel_format)
-{
-	switch (pixel_format) {
-	case DRM_FORMAT_C8:
-		return PLANE_CTL_FORMAT_INDEXED;
-	case DRM_FORMAT_RGB565:
-		return PLANE_CTL_FORMAT_RGB_565;
-	case DRM_FORMAT_XBGR8888:
-		return PLANE_CTL_FORMAT_XRGB_8888 | PLANE_CTL_ORDER_RGBX;
-	case DRM_FORMAT_XRGB8888:
-		return PLANE_CTL_FORMAT_XRGB_8888;
-	/*
-	 * XXX: For ARBG/ABGR formats we default to expecting scanout buffers
-	 * to be already pre-multiplied. We need to add a knob (or a different
-	 * DRM_FORMAT) for user-space to configure that.
-	 */
-	case DRM_FORMAT_ABGR8888:
-		return PLANE_CTL_FORMAT_XRGB_8888 | PLANE_CTL_ORDER_RGBX |
-			PLANE_CTL_ALPHA_SW_PREMULTIPLY;
-	case DRM_FORMAT_ARGB8888:
-		return PLANE_CTL_FORMAT_XRGB_8888 |
-			PLANE_CTL_ALPHA_SW_PREMULTIPLY;
-	case DRM_FORMAT_XRGB2101010:
-		return PLANE_CTL_FORMAT_XRGB_2101010;
-	case DRM_FORMAT_XBGR2101010:
-		return PLANE_CTL_ORDER_RGBX | PLANE_CTL_FORMAT_XRGB_2101010;
-	case DRM_FORMAT_YUYV:
-		return PLANE_CTL_FORMAT_YUV422 | PLANE_CTL_YUV422_YUYV;
-	case DRM_FORMAT_YVYU:
-		return PLANE_CTL_FORMAT_YUV422 | PLANE_CTL_YUV422_YVYU;
-	case DRM_FORMAT_UYVY:
-		return PLANE_CTL_FORMAT_YUV422 | PLANE_CTL_YUV422_UYVY;
-	case DRM_FORMAT_VYUY:
-		return PLANE_CTL_FORMAT_YUV422 | PLANE_CTL_YUV422_VYUY;
-	default:
-		MISSING_CASE(pixel_format);
-	}
+	spin_lock_irq(&dev->event_lock);
+	pending = to_intel_crtc(crtc)->unpin_work != NULL;
+	spin_unlock_irq(&dev->event_lock);
 
 	return 0;
 }
@@ -11747,8 +11708,7 @@ static int intel_crtc_page_flip(struct drm_crtc *crtc,
 	enum pipe pipe = intel_crtc->pipe;
 	struct intel_unpin_work *work;
 	struct intel_engine_cs *ring;
-	bool mmio_flip;
-	struct drm_i915_gem_request *request = NULL;
+
 	int ret;
 
 	/*
@@ -12163,21 +12123,24 @@ static bool check_single_encoder_cloning(struct drm_atomic_state *state,
 	return true;
 }
 
-static bool check_encoder_cloning(struct drm_atomic_state *state,
-				  struct intel_crtc *crtc)
-{
-	struct intel_encoder *encoder;
-	struct drm_connector *connector;
-	struct drm_connector_state *connector_state;
-	int i;
+cleanup:
+	spin_lock_irq(&dev->event_lock);
+	intel_crtc->unpin_work = NULL;
+	spin_unlock_irq(&dev->event_lock);
 
 	for_each_connector_in_state(state, connector, connector_state, i) {
 		if (connector_state->crtc != &crtc->base)
 			continue;
 
-		encoder = to_intel_encoder(connector_state->best_encoder);
-		if (!check_single_encoder_cloning(state, crtc, encoder))
-			return false;
+	if (ret == -EIO) {
+out_hang:
+		intel_crtc_wait_for_pending_flips(crtc);
+		ret = intel_pipe_set_base(crtc, crtc->x, crtc->y, fb);
+		if (ret == 0 && event) {
+			spin_lock_irq(&dev->event_lock);
+			drm_send_vblank_event(dev, pipe, event);
+			spin_unlock_irq(&dev->event_lock);
+		}
 	}
 
 	return true;
