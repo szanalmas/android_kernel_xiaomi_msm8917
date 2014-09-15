@@ -3701,6 +3701,8 @@ void valleyview_disable_display_irqs(struct drm_i915_private *dev_priv)
 
 static void vlv_display_irq_postinstall(struct drm_i915_private *dev_priv)
 {
+	struct drm_i915_private *dev_priv = dev->dev_private;
+
 	dev_priv->irq_mask = ~0;
 
 	i915_hotplug_interrupt_update(dev_priv, 0xffffffff, 0);
@@ -3718,7 +3720,7 @@ static void vlv_display_irq_postinstall(struct drm_i915_private *dev_priv)
 	if (dev_priv->display_irqs_enabled)
 		valleyview_display_irqs_install(dev_priv);
 	spin_unlock_irq(&dev_priv->irq_lock);
-}
+
 
 static int valleyview_irq_postinstall(struct drm_device *dev)
 {
@@ -3833,6 +3835,28 @@ static int gen8_irq_postinstall(struct drm_device *dev)
 static int cherryview_irq_postinstall(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
+	u32 enable_mask = I915_DISPLAY_PORT_INTERRUPT |
+		I915_DISPLAY_PIPE_A_EVENT_INTERRUPT |
+		I915_DISPLAY_PIPE_B_EVENT_INTERRUPT |
+		I915_DISPLAY_PIPE_C_EVENT_INTERRUPT;
+	u32 pipestat_enable = PLANE_FLIP_DONE_INT_STATUS_VLV |
+		PIPE_CRC_DONE_INTERRUPT_STATUS;
+	int pipe;
+
+	/*
+	 * Leave vblank interrupts masked initially.  enable/disable will
+	 * toggle them based on usage.
+	 */
+	dev_priv->irq_mask = ~enable_mask;
+
+	for_each_pipe(dev_priv, pipe)
+		I915_WRITE(PIPESTAT(pipe), 0xffff);
+
+	spin_lock_irq(&dev_priv->irq_lock);
+	i915_enable_pipestat(dev_priv, PIPE_A, PIPE_GMBUS_INTERRUPT_STATUS);
+	for_each_pipe(dev_priv, pipe)
+		i915_enable_pipestat(dev_priv, pipe, pipestat_enable);
+	spin_unlock_irq(&dev_priv->irq_lock);
 
 	vlv_display_irq_postinstall(dev_priv);
 
@@ -3871,6 +3895,7 @@ static void vlv_display_irq_uninstall(struct drm_i915_private *dev_priv)
 static void valleyview_irq_uninstall(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
+	int pipe;
 
 	if (!dev_priv)
 		return;
@@ -3880,6 +3905,15 @@ static void valleyview_irq_uninstall(struct drm_device *dev)
 	gen5_gt_irq_reset(dev);
 
 	I915_WRITE(HWSTAM, 0xffffffff);
+	I915_WRITE(PORT_HOTPLUG_EN, 0);
+	I915_WRITE(PORT_HOTPLUG_STAT, I915_READ(PORT_HOTPLUG_STAT));
+
+	/* Interrupt setup is already guaranteed to be single-threaded, this is
+	 * just to make the assert_spin_locked check happy. */
+	spin_lock_irq(&dev_priv->irq_lock);
+	if (dev_priv->display_irqs_enabled)
+		valleyview_display_irqs_uninstall(dev_priv);
+	spin_unlock_irq(&dev_priv->irq_lock);
 
 	vlv_display_irq_uninstall(dev_priv);
 }
@@ -4662,14 +4696,30 @@ static void intel_hpd_irq_reenable_work(struct work_struct *work)
  */
 int intel_irq_install(struct drm_i915_private *dev_priv)
 {
-	/*
-	 * We enable some interrupt sources in our postinstall hooks, so mark
-	 * interrupts as enabled _before_ actually enabling them to avoid
-	 * special cases in our ordering checks.
-	 */
-	dev_priv->pm.irqs_enabled = true;
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	struct drm_mode_config *mode_config = &dev->mode_config;
+	struct drm_connector *connector;
+	int i;
 
-	return drm_irq_install(dev_priv->dev, dev_priv->dev->pdev->irq);
+	for (i = 1; i < HPD_NUM_PINS; i++) {
+		dev_priv->hpd_stats[i].hpd_cnt = 0;
+		dev_priv->hpd_stats[i].hpd_mark = HPD_ENABLED;
+	}
+	list_for_each_entry(connector, &mode_config->connector_list, head) {
+		struct intel_connector *intel_connector = to_intel_connector(connector);
+		connector->polled = intel_connector->polled;
+		if (connector->encoder && !connector->polled && I915_HAS_HOTPLUG(dev) && intel_connector->encoder->hpd_pin > HPD_NONE)
+			connector->polled = DRM_CONNECTOR_POLL_HPD;
+		if (intel_connector->mst_port)
+			connector->polled = DRM_CONNECTOR_POLL_HPD;
+	}
+
+	/* Interrupt setup is already guaranteed to be single-threaded, this is
+	 * just to make the assert_spin_locked checks happy. */
+	spin_lock_irq(&dev_priv->irq_lock);
+	if (dev_priv->display.hpd_irq_setup)
+		dev_priv->display.hpd_irq_setup(dev);
+	spin_unlock_irq(&dev_priv->irq_lock);
 }
 
 /**
