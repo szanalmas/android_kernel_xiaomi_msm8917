@@ -555,8 +555,7 @@ static u32 intel_panel_get_backlight(struct intel_connector *connector)
 {
 	struct drm_device *dev = connector->base.dev;
 	struct drm_i915_private *dev_priv = dev->dev_private;
-	struct intel_panel *panel = &connector->panel;
-	u32 val = 0;
+	u32 val;
 
 	mutex_lock(&dev_priv->backlight_lock);
 
@@ -722,32 +721,7 @@ void intel_panel_set_backlight_acpi(struct intel_connector *connector,
 		intel_panel_actually_set_backlight(connector, hw_level);
 
 	mutex_unlock(&dev_priv->backlight_lock);
-}
 
-static void lpt_disable_backlight(struct intel_connector *connector)
-{
-	struct drm_device *dev = connector->base.dev;
-	struct drm_i915_private *dev_priv = dev->dev_private;
-	u32 tmp;
-
-	intel_panel_actually_set_backlight(connector, 0);
-
-	/*
-	 * Although we don't support or enable CPU PWM with LPT/SPT based
-	 * systems, it may have been enabled prior to loading the
-	 * driver. Disable to avoid warnings on LCPLL disable.
-	 *
-	 * This needs rework if we need to add support for CPU PWM on PCH split
-	 * platforms.
-	 */
-	tmp = I915_READ(BLC_PWM_CPU_CTL2);
-	if (tmp & BLM_PWM_ENABLE) {
-		DRM_DEBUG_KMS("cpu backlight was enabled, disabling\n");
-		I915_WRITE(BLC_PWM_CPU_CTL2, tmp & ~BLM_PWM_ENABLE);
-	}
-
-	tmp = I915_READ(BLC_PWM_PCH_CTL1);
-	I915_WRITE(BLC_PWM_PCH_CTL1, tmp & ~BLM_PCH_PWM_ENABLE);
 }
 
 static void pch_disable_backlight(struct intel_connector *connector)
@@ -833,6 +807,7 @@ void intel_panel_disable_backlight(struct intel_connector *connector)
 	struct drm_device *dev = connector->base.dev;
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	struct intel_panel *panel = &connector->panel;
+	enum pipe pipe = intel_get_pipe_from_connector(connector);
 
 	if (!panel->backlight.present)
 		return;
@@ -1704,7 +1679,7 @@ int intel_panel_setup_backlight(struct drm_connector *connector, enum pipe pipe)
 
 	/* set level and max in panel struct */
 	mutex_lock(&dev_priv->backlight_lock);
-	ret = panel->backlight.setup(intel_connector, pipe);
+	ret = dev_priv->display.setup_backlight(intel_connector);
 	mutex_unlock(&dev_priv->backlight_lock);
 
 	if (ret) {
