@@ -11606,7 +11606,9 @@ static int intel_queue_mmio_flip(struct drm_device *dev,
 				 struct intel_engine_cs *ring,
 				 uint32_t flags)
 {
-	struct intel_mmio_flip *mmio_flip;
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+	int ret;
 
 	mmio_flip = kmalloc(sizeof(*mmio_flip), GFP_KERNEL);
 	if (mmio_flip == NULL)
@@ -11616,8 +11618,10 @@ static int intel_queue_mmio_flip(struct drm_device *dev,
 	mmio_flip->req = i915_gem_request_reference(obj->last_write_req);
 	mmio_flip->crtc = to_intel_crtc(crtc);
 
-	INIT_WORK(&mmio_flip->work, intel_mmio_flip_work_func);
-	schedule_work(&mmio_flip->work);
+	spin_lock_irq(&dev_priv->mmio_flip_lock);
+	intel_crtc->mmio_flip.seqno = obj->last_write_seqno;
+	intel_crtc->mmio_flip.ring_id = obj->ring->id;
+	spin_unlock_irq(&dev_priv->mmio_flip_lock);
 
 	return 0;
 }
