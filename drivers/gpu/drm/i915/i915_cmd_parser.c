@@ -992,24 +992,9 @@ static bool check_cmd(const struct intel_engine_cs *ring,
 		 * fields if the command can perform more than one
 		 * access at a time.
 		 */
-		const u32 step = desc->reg.step ? desc->reg.step : length;
-		u32 offset;
-
-		for (offset = desc->reg.offset; offset < length;
-		     offset += step) {
-			const u32 reg_addr = cmd[offset] & desc->reg.mask;
-			const struct drm_i915_reg_descriptor *reg =
-				find_reg(ring->reg_table, ring->reg_count,
-					 reg_addr);
-
-			if (!reg && is_master)
-				reg = find_reg(ring->master_reg_table,
-					       ring->master_reg_count,
-					       reg_addr);
-
-			if (!reg) {
-				DRM_DEBUG_DRIVER("CMD: Rejected register 0x%08X in command: 0x%08X (ring=%d)\n",
-						 reg_addr, *cmd, ring->id);
+		if (reg_addr == OACONTROL) {
+			if (desc->cmd.value == MI_LOAD_REGISTER_MEM) {
+				DRM_DEBUG_DRIVER("CMD: Rejected LRM to OACONTROL\n");
 				return false;
 			}
 
