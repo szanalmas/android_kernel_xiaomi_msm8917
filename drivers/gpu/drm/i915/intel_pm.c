@@ -68,6 +68,8 @@ static void i8xx_disable_fbc(struct drm_device *dev)
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	u32 fbc_ctl;
 
+	dev_priv->fbc.enabled = false;
+
 	/* Disable compression */
 	fbc_ctl = I915_READ(FBC_CONTROL);
 	if ((fbc_ctl & FBC_CTL_EN) == 0)
@@ -95,6 +97,8 @@ static void i8xx_enable_fbc(struct drm_crtc *crtc)
 	int cfb_pitch;
 	int i;
 	u32 fbc_ctl;
+
+	dev_priv->fbc.enabled = true;
 
 	cfb_pitch = dev_priv->fbc.size / FBC_LL_SIZE;
 	if (fb->pitches[0] < cfb_pitch)
@@ -150,6 +154,8 @@ static void g4x_enable_fbc(struct drm_crtc *crtc)
 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
 	u32 dpfc_ctl;
 
+	dev_priv->fbc.enabled = true;
+
 	dpfc_ctl = DPFC_CTL_PLANE(intel_crtc->plane) | DPFC_SR_EN;
 	if (drm_format_plane_cpp(fb->pixel_format, 0) == 2)
 		dpfc_ctl |= DPFC_CTL_LIMIT_2X;
@@ -169,6 +175,8 @@ static void g4x_disable_fbc(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	u32 dpfc_ctl;
+
+	dev_priv->fbc.enabled = false;
 
 	/* Disable compression */
 	dpfc_ctl = I915_READ(DPFC_CONTROL);
@@ -221,6 +229,8 @@ static void ironlake_enable_fbc(struct drm_crtc *crtc)
 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
 	u32 dpfc_ctl;
 
+	dev_priv->fbc.enabled = true;
+
 	dpfc_ctl = DPFC_CTL_PLANE(intel_crtc->plane);
 	if (drm_format_plane_cpp(fb->pixel_format, 0) == 2)
 		dev_priv->fbc.threshold++;
@@ -261,6 +271,8 @@ static void ironlake_disable_fbc(struct drm_device *dev)
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	u32 dpfc_ctl;
 
+	dev_priv->fbc.enabled = false;
+
 	/* Disable compression */
 	dpfc_ctl = I915_READ(ILK_DPFC_CONTROL);
 	if (dpfc_ctl & DPFC_CTL_EN) {
@@ -286,6 +298,8 @@ static void gen7_enable_fbc(struct drm_crtc *crtc)
 	struct drm_i915_gem_object *obj = intel_fb_obj(fb);
 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
 	u32 dpfc_ctl;
+
+	dev_priv->fbc.enabled = true;
 
 	dpfc_ctl = IVB_DPFC_CTL_PLANE(intel_crtc->plane);
 	if (drm_format_plane_cpp(fb->pixel_format, 0) == 2)
@@ -336,16 +350,7 @@ bool intel_fbc_enabled(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 
-	/* If it wasn't never enabled by kernel parameter or platform default
-	 * we can avoid reading registers so many times in vain
-	 */
-	if (!i915.enable_fbc)
-		return false;
-
-	if (!dev_priv->display.fbc_enabled)
-		return false;
-
-	return dev_priv->display.fbc_enabled(dev);
+	return dev_priv->fbc.enabled;
 }
 
 void gen8_fbc_sw_flush(struct drm_device *dev, u32 value)
@@ -7490,8 +7495,10 @@ void intel_suspend_hw(struct drm_device *dev)
 
 static void intel_init_fbc(struct drm_i915_private *dev_priv)
 {
-	if (!HAS_FBC(dev_priv))
+	if (!HAS_FBC(dev_priv)) {
+		dev_priv->fbc.enabled = false;
 		return;
+	}
 
 	if (INTEL_INFO(dev_priv)->gen >= 7) {
 		dev_priv->display.fbc_enabled = ironlake_fbc_enabled;
@@ -7513,6 +7520,8 @@ static void intel_init_fbc(struct drm_i915_private *dev_priv)
 		/* This value was pulled out of someone's hat */
 		I915_WRITE(FBC_CONTROL, 500 << FBC_CTL_INTERVAL_SHIFT);
 	}
+
+	dev_priv->fbc.enabled = dev_priv->display.fbc_enabled(dev_priv->dev);
 }
 
 /* Set up chip specific power management-related functions */
