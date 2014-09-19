@@ -107,16 +107,10 @@ static int sanitize_enable_ppgtt(struct drm_device *dev, int enable_ppgtt)
 
 	has_aliasing_ppgtt = INTEL_INFO(dev)->gen >= 6;
 	has_full_ppgtt = INTEL_INFO(dev)->gen >= 7;
+	if (IS_GEN8(dev))
+		has_full_ppgtt = false; /* XXX why? */
 
-	if (intel_vgpu_active(dev))
-		has_full_ppgtt = false; /* emulation is too hard */
-
-	/*
-	 * We don't allow disabling PPGTT for gen9+ as it's a requirement for
-	 * execlists, the sole mechanism available to submit work.
-	 */
-	if (INTEL_INFO(dev)->gen < 9 &&
-	    (enable_ppgtt == 0 || !has_aliasing_ppgtt))
+	if (enable_ppgtt == 0 || !has_aliasing_ppgtt)
 		return 0;
 
 	if (enable_ppgtt == 1)
@@ -140,7 +134,7 @@ static int sanitize_enable_ppgtt(struct drm_device *dev, int enable_ppgtt)
 		return 0;
 	}
 
-	return HAS_PPGTT(dev) ? 2 : HAS_ALIASING_PPGTT(dev) ? 1 : 0;
+	return has_full_ppgtt ? 2 : has_aliasing_ppgtt ? 1 : 0;
 }
 
 static int ppgtt_bind_vma(struct i915_vma *vma,
