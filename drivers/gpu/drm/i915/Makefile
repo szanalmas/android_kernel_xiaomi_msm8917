@@ -56,10 +56,7 @@ i915-y += intel_audio.o \
 	  intel_atomic_plane.o \
 	  intel_bios.o \
 	  intel_display.o \
-	  intel_fbc.o \
-	  intel_fifo_underrun.o \
 	  intel_frontbuffer.o \
-	  intel_hotplug.o \
 	  intel_modes.o \
 	  intel_overlay.o \
 	  intel_psr.o \

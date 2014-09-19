@@ -83,6 +83,9 @@ static const uint32_t intel_cursor_formats[] = {
 	DRM_FORMAT_ARGB8888,
 };
 
+#define DIV_ROUND_CLOSEST_ULL(ll, d)	\
+({ unsigned long long _tmp = (ll)+(d)/2; do_div(_tmp, d); _tmp; })
+
 static void intel_crtc_update_cursor(struct drm_crtc *crtc, bool on);
 
 static void i9xx_crtc_clock_get(struct intel_crtc *crtc,
@@ -2919,7 +2922,11 @@ static void ironlake_update_primary_plane(struct drm_crtc *crtc,
 u32 intel_fb_stride_alignment(struct drm_device *dev, uint64_t fb_modifier,
 			      uint32_t pixel_format)
 {
-	u32 bits_per_pixel = drm_format_plane_cpp(pixel_format, 0) * 8;
+	struct drm_device *dev = crtc->dev;
+	struct drm_i915_private *dev_priv = dev->dev_private;
+
+	if (dev_priv->display.disable_fbc)
+		dev_priv->display.disable_fbc(dev);
 
 	/*
 	 * The stride is either expressed as a multiple of 64 bytes
@@ -11018,6 +11025,42 @@ struct drm_display_mode *intel_crtc_mode_get(struct drm_device *dev,
 	drm_mode_set_name(mode);
 
 	return mode;
+}
+
+static void intel_decrease_pllclock(struct drm_crtc *crtc)
+{
+	struct drm_device *dev = crtc->dev;
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+
+	if (!HAS_GMCH_DISPLAY(dev))
+		return;
+
+	if (!dev_priv->lvds_downclock_avail)
+		return;
+
+	/*
+	 * Since this is called by a timer, we should never get here in
+	 * the manual case.
+	 */
+	if (!HAS_PIPE_CXSR(dev) && intel_crtc->lowfreq_avail) {
+		int pipe = intel_crtc->pipe;
+		int dpll_reg = DPLL(pipe);
+		int dpll;
+
+		DRM_DEBUG_DRIVER("downclocking LVDS\n");
+
+		assert_panel_unlocked(dev_priv, pipe);
+
+		dpll = I915_READ(dpll_reg);
+		dpll |= DISPLAY_RATE_SELECT_FPA1;
+		I915_WRITE(dpll_reg, dpll);
+		intel_wait_for_vblank(dev, pipe);
+		dpll = I915_READ(dpll_reg);
+		if (!(dpll & DISPLAY_RATE_SELECT_FPA1))
+			DRM_DEBUG_DRIVER("failed to downclock LVDS!\n");
+	}
+
 }
 
 void intel_mark_busy(struct drm_device *dev)
