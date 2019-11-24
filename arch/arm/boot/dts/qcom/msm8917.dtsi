@@ -55,12 +55,21 @@
 			compatible = "android,firmware";
 			fstab {
 				compatible = "android,fstab";
+				system {
+                                        compatible = "android,system";
+                                        dev = "/dev/block/platform/soc/7824900.sdhci/by-name/system";
+                                        type = "ext4";
+                                        mnt_flags = "ro,barrier=1,discard";
+                                        fsmgr_flags = "verify";
+                                        status = "ok";
+                                };
+
 				vendor {
 					compatible = "android,vendor";
 					dev = "/dev/block/platform/soc/7824900.sdhci/by-name/cust";
 					type = "ext4";
 					mnt_flags = "ro,barrier=1,discard";
-					fsmgr_flags = "wait";
+					fsmgr_flags = "verify";
 					status = "ok";
 				};
 			};
