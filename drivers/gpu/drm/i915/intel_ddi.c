@@ -128,185 +128,33 @@ static const struct ddi_buf_trans bdw_ddi_translations_hdmi[] = {
 	{ 0x80FFFFFF, 0x001B0002, 0x0 },/* 9:	1000	1000	0	*/
 };
 
-/* Skylake H and S */
 static const struct ddi_buf_trans skl_ddi_translations_dp[] = {
-	{ 0x00002016, 0x000000A0, 0x0 },
-	{ 0x00005012, 0x0000009B, 0x0 },
-	{ 0x00007011, 0x00000088, 0x0 },
-	{ 0x00009010, 0x000000C7, 0x0 },
-	{ 0x00002016, 0x0000009B, 0x0 },
-	{ 0x00005012, 0x00000088, 0x0 },
-	{ 0x00007011, 0x000000C7, 0x0 },
-	{ 0x00002016, 0x000000DF, 0x0 },
-	{ 0x00005012, 0x000000C7, 0x0 },
+	{ 0x00000018, 0x000000a0 },
+	{ 0x00004014, 0x00000098 },
+	{ 0x00006012, 0x00000088 },
+	{ 0x00008010, 0x00000080 },
+	{ 0x00000018, 0x00000098 },
+	{ 0x00004014, 0x00000088 },
+	{ 0x00006012, 0x00000080 },
+	{ 0x00000018, 0x00000088 },
+	{ 0x00004014, 0x00000080 },
 };
 
-/* Skylake U */
-static const struct ddi_buf_trans skl_u_ddi_translations_dp[] = {
-	{ 0x0000201B, 0x000000A2, 0x0 },
-	{ 0x00005012, 0x00000088, 0x0 },
-	{ 0x00007011, 0x00000087, 0x0 },
-	{ 0x80009010, 0x000000C7, 0x1 },	/* Uses I_boost level 0x1 */
-	{ 0x0000201B, 0x0000009D, 0x0 },
-	{ 0x00005012, 0x000000C7, 0x0 },
-	{ 0x00007011, 0x000000C7, 0x0 },
-	{ 0x00002016, 0x00000088, 0x0 },
-	{ 0x00005012, 0x000000C7, 0x0 },
-};
-
-/* Skylake Y */
-static const struct ddi_buf_trans skl_y_ddi_translations_dp[] = {
-	{ 0x00000018, 0x000000A2, 0x0 },
-	{ 0x00005012, 0x00000088, 0x0 },
-	{ 0x00007011, 0x00000087, 0x0 },
-	{ 0x80009010, 0x000000C7, 0x3 },	/* Uses I_boost level 0x3 */
-	{ 0x00000018, 0x0000009D, 0x0 },
-	{ 0x00005012, 0x000000C7, 0x0 },
-	{ 0x00007011, 0x000000C7, 0x0 },
-	{ 0x00000018, 0x00000088, 0x0 },
-	{ 0x00005012, 0x000000C7, 0x0 },
-};
-
-/*
- * Skylake H and S
- * eDP 1.4 low vswing translation parameters
- */
-static const struct ddi_buf_trans skl_ddi_translations_edp[] = {
-	{ 0x00000018, 0x000000A8, 0x0 },
-	{ 0x00004013, 0x000000A9, 0x0 },
-	{ 0x00007011, 0x000000A2, 0x0 },
-	{ 0x00009010, 0x0000009C, 0x0 },
-	{ 0x00000018, 0x000000A9, 0x0 },
-	{ 0x00006013, 0x000000A2, 0x0 },
-	{ 0x00007011, 0x000000A6, 0x0 },
-	{ 0x00000018, 0x000000AB, 0x0 },
-	{ 0x00007013, 0x0000009F, 0x0 },
-	{ 0x00000018, 0x000000DF, 0x0 },
-};
-
-/*
- * Skylake U
- * eDP 1.4 low vswing translation parameters
- */
-static const struct ddi_buf_trans skl_u_ddi_translations_edp[] = {
-	{ 0x00000018, 0x000000A8, 0x0 },
-	{ 0x00004013, 0x000000A9, 0x0 },
-	{ 0x00007011, 0x000000A2, 0x0 },
-	{ 0x00009010, 0x0000009C, 0x0 },
-	{ 0x00000018, 0x000000A9, 0x0 },
-	{ 0x00006013, 0x000000A2, 0x0 },
-	{ 0x00007011, 0x000000A6, 0x0 },
-	{ 0x00002016, 0x000000AB, 0x0 },
-	{ 0x00005013, 0x0000009F, 0x0 },
-	{ 0x00000018, 0x000000DF, 0x0 },
-};
-
-/*
- * Skylake Y
- * eDP 1.4 low vswing translation parameters
- */
-static const struct ddi_buf_trans skl_y_ddi_translations_edp[] = {
-	{ 0x00000018, 0x000000A8, 0x0 },
-	{ 0x00004013, 0x000000AB, 0x0 },
-	{ 0x00007011, 0x000000A4, 0x0 },
-	{ 0x00009010, 0x000000DF, 0x0 },
-	{ 0x00000018, 0x000000AA, 0x0 },
-	{ 0x00006013, 0x000000A4, 0x0 },
-	{ 0x00007011, 0x0000009D, 0x0 },
-	{ 0x00000018, 0x000000A0, 0x0 },
-	{ 0x00006012, 0x000000DF, 0x0 },
-	{ 0x00000018, 0x0000008A, 0x0 },
-};
-
-/* Skylake U, H and S */
 static const struct ddi_buf_trans skl_ddi_translations_hdmi[] = {
-	{ 0x00000018, 0x000000AC, 0x0 },
-	{ 0x00005012, 0x0000009D, 0x0 },
-	{ 0x00007011, 0x00000088, 0x0 },
-	{ 0x00000018, 0x000000A1, 0x0 },
-	{ 0x00000018, 0x00000098, 0x0 },
-	{ 0x00004013, 0x00000088, 0x0 },
-	{ 0x00006012, 0x00000087, 0x0 },
-	{ 0x00000018, 0x000000DF, 0x0 },
-	{ 0x00003015, 0x00000087, 0x0 },	/* Default */
-	{ 0x00003015, 0x000000C7, 0x0 },
-	{ 0x00000018, 0x000000C7, 0x0 },
+					/* Idx	NT mV   T mV    db  */
+	{ 0x00000018, 0x000000a0 },	/* 0:	400	400	0   */
+	{ 0x00004014, 0x00000098 },	/* 1:	400	600	3.5 */
+	{ 0x00006012, 0x00000088 },	/* 2:	400	800	6   */
+	{ 0x00000018, 0x0000003c },	/* 3:	450	450	0   */
+	{ 0x00000018, 0x00000098 },	/* 4:	600	600	0   */
+	{ 0x00003015, 0x00000088 },	/* 5:	600	800	2.5 */
+	{ 0x00005013, 0x00000080 },	/* 6:	600	1000	4.5 */
+	{ 0x00000018, 0x00000088 },	/* 7:	800	800	0   */
+	{ 0x00000096, 0x00000080 },	/* 8:	800	1000	2   */
+	{ 0x00000018, 0x00000080 },	/* 9:	1200	1200	0   */
 };
 
-/* Skylake Y */
-static const struct ddi_buf_trans skl_y_ddi_translations_hdmi[] = {
-	{ 0x00000018, 0x000000A1, 0x0 },
-	{ 0x00005012, 0x000000DF, 0x0 },
-	{ 0x00007011, 0x00000084, 0x0 },
-	{ 0x00000018, 0x000000A4, 0x0 },
-	{ 0x00000018, 0x0000009D, 0x0 },
-	{ 0x00004013, 0x00000080, 0x0 },
-	{ 0x00006013, 0x000000C7, 0x0 },
-	{ 0x00000018, 0x0000008A, 0x0 },
-	{ 0x00003015, 0x000000C7, 0x0 },	/* Default */
-	{ 0x80003015, 0x000000C7, 0x7 },	/* Uses I_boost level 0x7 */
-	{ 0x00000018, 0x000000C7, 0x0 },
-};
-
-struct bxt_ddi_buf_trans {
-	u32 margin;	/* swing value */
-	u32 scale;	/* scale value */
-	u32 enable;	/* scale enable */
-	u32 deemphasis;
-	bool default_index; /* true if the entry represents default value */
-};
-
-static const struct bxt_ddi_buf_trans bxt_ddi_translations_dp[] = {
-					/* Idx	NT mV diff	db  */
-	{ 52,  0x9A, 0, 128, true  },	/* 0:	400		0   */
-	{ 78,  0x9A, 0, 85,  false },	/* 1:	400		3.5 */
-	{ 104, 0x9A, 0, 64,  false },	/* 2:	400		6   */
-	{ 154, 0x9A, 0, 43,  false },	/* 3:	400		9.5 */
-	{ 77,  0x9A, 0, 128, false },	/* 4:	600		0   */
-	{ 116, 0x9A, 0, 85,  false },	/* 5:	600		3.5 */
-	{ 154, 0x9A, 0, 64,  false },	/* 6:	600		6   */
-	{ 102, 0x9A, 0, 128, false },	/* 7:	800		0   */
-	{ 154, 0x9A, 0, 85,  false },	/* 8:	800		3.5 */
-	{ 154, 0x9A, 1, 128, false },	/* 9:	1200		0   */
-};
-
-static const struct bxt_ddi_buf_trans bxt_ddi_translations_edp[] = {
-					/* Idx	NT mV diff	db  */
-	{ 26, 0, 0, 128, false },	/* 0:	200		0   */
-	{ 38, 0, 0, 112, false },	/* 1:	200		1.5 */
-	{ 48, 0, 0, 96,  false },	/* 2:	200		4   */
-	{ 54, 0, 0, 69,  false },	/* 3:	200		6   */
-	{ 32, 0, 0, 128, false },	/* 4:	250		0   */
-	{ 48, 0, 0, 104, false },	/* 5:	250		1.5 */
-	{ 54, 0, 0, 85,  false },	/* 6:	250		4   */
-	{ 43, 0, 0, 128, false },	/* 7:	300		0   */
-	{ 54, 0, 0, 101, false },	/* 8:	300		1.5 */
-	{ 48, 0, 0, 128, false },	/* 9:	300		0   */
-};
-
-/* BSpec has 2 recommended values - entries 0 and 8.
- * Using the entry with higher vswing.
- */
-static const struct bxt_ddi_buf_trans bxt_ddi_translations_hdmi[] = {
-					/* Idx	NT mV diff	db  */
-	{ 52,  0x9A, 0, 128, false },	/* 0:	400		0   */
-	{ 52,  0x9A, 0, 85,  false },	/* 1:	400		3.5 */
-	{ 52,  0x9A, 0, 64,  false },	/* 2:	400		6   */
-	{ 42,  0x9A, 0, 43,  false },	/* 3:	400		9.5 */
-	{ 77,  0x9A, 0, 128, false },	/* 4:	600		0   */
-	{ 77,  0x9A, 0, 85,  false },	/* 5:	600		3.5 */
-	{ 77,  0x9A, 0, 64,  false },	/* 6:	600		6   */
-	{ 102, 0x9A, 0, 128, false },	/* 7:	800		0   */
-	{ 102, 0x9A, 0, 85,  false },	/* 8:	800		3.5 */
-	{ 154, 0x9A, 1, 128, true },	/* 9:	1200		0   */
-};
-
-static void bxt_ddi_vswing_sequence(struct drm_device *dev, u32 level,
-				    enum port port, int type);
-
-static void ddi_get_encoder_port(struct intel_encoder *intel_encoder,
-				 struct intel_digital_port **dig_port,
-				 enum port *port)
+enum port intel_ddi_get_encoder_port(struct intel_encoder *intel_encoder)
 {
 	struct drm_encoder *encoder = &intel_encoder->base;
 
@@ -440,27 +288,13 @@ static void intel_prepare_ddi_buffers(struct drm_device *dev, enum port port,
 	const struct ddi_buf_trans *ddi_translations_hdmi;
 	const struct ddi_buf_trans *ddi_translations;
 
-	if (IS_BROXTON(dev)) {
-		if (!supports_hdmi)
-			return;
-
-		/* Vswing programming for HDMI */
-		bxt_ddi_vswing_sequence(dev, hdmi_level, port,
-					INTEL_OUTPUT_HDMI);
-		return;
-	} else if (IS_SKYLAKE(dev)) {
+	if (IS_SKYLAKE(dev)) {
 		ddi_translations_fdi = NULL;
-		ddi_translations_dp =
-				skl_get_buf_trans_dp(dev, &n_dp_entries);
-		ddi_translations_edp =
-				skl_get_buf_trans_edp(dev, &n_edp_entries);
-		ddi_translations_hdmi =
-				skl_get_buf_trans_hdmi(dev, &n_hdmi_entries);
-		hdmi_default_entry = 8;
-		/* If we're boosting the current, set bit 31 of trans1 */
-		if (dev_priv->vbt.ddi_port_info[port].hdmi_boost_level ||
-		    dev_priv->vbt.ddi_port_info[port].dp_boost_level)
-			iboost_bit = 1<<31;
+		ddi_translations_dp = skl_ddi_translations_dp;
+		ddi_translations_edp = skl_ddi_translations_dp;
+		ddi_translations_hdmi = skl_ddi_translations_hdmi;
+		n_hdmi_entries = ARRAY_SIZE(skl_ddi_translations_hdmi);
+		hdmi_800mV_0dB = 7;
 	} else if (IS_BROADWELL(dev)) {
 		ddi_translations_fdi = bdw_ddi_translations_fdi;
 		ddi_translations_dp = bdw_ddi_translations_dp;
@@ -522,7 +356,7 @@ static void intel_prepare_ddi_buffers(struct drm_device *dev, enum port port,
 			ddi_translations = ddi_translations_fdi;
 		else
 			ddi_translations = ddi_translations_dp;
-		size = n_dp_entries;
+
 		break;
 	default:
 		BUG();
